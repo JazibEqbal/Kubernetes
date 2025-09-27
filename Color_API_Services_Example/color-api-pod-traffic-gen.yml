@@ -1,0 +1,19 @@
+# IP is ClusterIP generated from svc
+# kubectl logs -f traffic-gen --> traffic-gen == POD_NAME
+# ClusterIP can be accessed by IP as well as it's name. Advantage of name over IP is that when you delete cluster api service and recreate the service the IP will change but not the name. Hence, zero downtime.
+# ClusterIP is intended for internal communication (more secure) while NodePort svc exposes port to external (outside the cluster)
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: traffic-gen
+  labels:
+    app: color-api
+spec:
+  containers:
+    - name: traffic-gen
+      image: lmacademy/traffic-generator:1.0.0
+      args:
+        #- "10.103.210.78/api"
+        - "cluster-ip-svc/api"
+        - "5"

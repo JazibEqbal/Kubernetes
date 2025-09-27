@@ -1,0 +1,16 @@
+# ClusterIP gives a stable/static IP and distributes equal loads to all the pods mapped to it
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cluster-ip-svc
+  labels:
+    app: color-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: color-api

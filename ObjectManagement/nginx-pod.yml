@@ -1,0 +1,16 @@
+# Same as: kubectl run nginx --image=nginx
+# kubectl get pod nginx -o yaml
+# kubectl get pod --watch
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+  labels:
+    app: nginx
+spec:
+  containers:
+    - name: nginx-container
+      image: nginx
+      ports:
+        - containerPort: 80
