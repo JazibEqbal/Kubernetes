@@ -1,4 +1,5 @@
 # ClusterIP gives a stable/static IP and distributes equal loads to all the pods mapped to it
+# Exposes the Service on a cluster-internal IP. Choosing this value makes the Service only reachable from within the cluster.
 
 apiVersion: v1
 kind: Service

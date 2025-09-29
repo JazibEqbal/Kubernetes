@@ -1,0 +1,11 @@
+# kubectl get ns
+# get pods from dev namespace --> kubectl get pod -n dev
+# set the default ns context to dev --> kubectl config set-context --current --namespace=dev
+# kubectl config view --> view current context
+# kubectl get pods --all-namespaces / kubectl get pods -A --> gets all pods from all ns
+# cross communication 2 ns cannot be done through clusterIP or name of svc. It must be done through FQDN <service_ip>.<namespace_name>.svc.cluster.local
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
