@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: heavy-api-pod
+  namespace: dev
+  labels:
+    app: heavy-api
+spec:
+  containers:
+  - name: heavy-api-container
+    image: lmacademy/color-api:1.1.0
+    resources:
+      requests:
+        cpu: '1'
+        memory: '500Mi'
+      limits:
+        memory: "1Gi"
+        cpu: "2"
+    ports:
+      - containerPort: 80

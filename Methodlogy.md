@@ -18,3 +18,6 @@ matchExpressions:
 Annotations: Helps in adding useful information and configuration to resources.
 
 Namespaces: improve isolation for group of resources. Basically helps in dividing resources across multiple clusters, environments.
+
+Resource (applied at ns level), requests and limits helps us to fairly devide resources such as CPU, memory, storage as per configuration so that a single
+application or namespace doesn't consume all of resorce. Request is like minimum resource needed and limit as maximum.
