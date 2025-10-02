@@ -1,0 +1,18 @@
+# If we delete PersistentVolumeClaim, the persistent volume will also be delete as by default Reclain Policy is Delete.
+# Resource gets bounded as PVC is created. 
+# To delete a PV, first we need to delete PVC.
+# storageClassName: standard is default
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dynamic-volume-claim
+  namespace: default
+spec:
+  storageClassName: standard
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem

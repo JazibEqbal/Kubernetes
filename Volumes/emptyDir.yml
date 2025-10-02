@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: empty-dir-pod
+  labels:
+    app: empty-dir
+spec:
+  containers:
+  - name: empty-dir-container-writer
+    image: busybox:1.36.1
+    command:
+      - 'sh'
+      - '-c'
+      - 'sleep 3000'
+    resources:
+      limits:
+        memory: "256Mi"
+        cpu: "2"
+      requests:
+        cpu: "1"
+        memory: '128Mi'
+    ports:
+      - containerPort: 80
+    volumeMounts:
+      - name: empty-dir-temp-storage
+        mountPath: /usr/temp
+  - name: empty-dir-container-read-only
+    image: busybox:1.36.1
+    command:
+      - 'sh'
+      - '-c'
+      - 'sleep 3000'
+    resources:
+      limits:
+        memory: "256Mi"
+        cpu: "2"
+      requests:
+        cpu: "1"
+        memory: '128Mi'
+    ports:
+      - containerPort: 80
+    volumeMounts:
+      - name: empty-dir-temp-storage
+        mountPath: /temp
+        readOnly: true 
+  volumes:
+    - name: empty-dir-temp-storage
+      emptyDir: {}
+      # sizeLimit: '128Mi'
