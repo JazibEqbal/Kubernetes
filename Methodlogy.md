@@ -31,6 +31,11 @@ Volumes:
 
   Static Provisioning: volumes are created and based on PV claims pods are allocated
   Dynamic Provisioning: PV claims are created and then volumes are created and pods are allocated.
+  Retain is default persistentVolumeReclaimPolicy & Filesystem is default volumeMode.
 
 kubectl exec -it pod_name --sh --> starting a shell within a pod
-kubectl exec -it pod_name  -c container_name --sh --> starting a shell within a container from a pod which has many containers
+kubectl exec -it pod_name  -c container_name --sh --> starting a shell within a container from a pod which has many containers.
+
+StatefulSet: Provides stable DNS identity with indexing. They help to create pods with a defined-index name rather than adding randome strings to pod definitions. If a pod is deleted and re-created it will use the same volume and PVC is not deleted which is bound to the pod.
+
+Headless StatefulSet means defining a service and setting clusterIp to None which means no clusterIp will be assigned to the resource created.
