@@ -48,3 +48,7 @@ ConfigMaps and Pods must exist in the same namespace.
 Config can be set as immutable.
 
 kubectl get configmap
+
+Secrets: Decouple and inject sensitive into Pods.
+         Type Opaque and can be decrypted from base64.
+           kubectl create secret generic <secret_name> --from-literal=username=<username> --from-literal=password=<password>
