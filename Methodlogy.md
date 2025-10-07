@@ -39,3 +39,12 @@ kubectl exec -it pod_name  -c container_name --sh --> starting a shell within a 
 StatefulSet: Provides stable DNS identity with indexing. They help to create pods with a defined-index name rather than adding randome strings to pod definitions. If a pod is deleted and re-created it will use the same volume and PVC is not deleted which is bound to the pod.
 
 Headless StatefulSet means defining a service and setting clusterIp to None which means no clusterIp will be assigned to the resource created.
+
+ConfigMaps: Decouple and inject configurations into Pods. 
+It helps us to store non sensitive data as key value pairs and decouple this data from the pod definition and lifecycle.
+ConfigMaps can be referenced by environment variables or by file mounts. 
+ConfigMaps size cannot exceed 1MB.
+ConfigMaps and Pods must exist in the same namespace.
+Config can be set as immutable.
+
+kubectl get configmap
