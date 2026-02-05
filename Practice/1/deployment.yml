@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web_deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web_app
+  template:
+    metadata:
+      labels:
+        app: web_app
+    spec:
+      containers:
+        - name: web_app_container
+          image: nginx
+          ports:
+            - containerPort: 8080
+          restartPolicy: Always

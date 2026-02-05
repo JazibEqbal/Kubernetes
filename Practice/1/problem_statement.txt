@@ -1,0 +1,19 @@
+You joined a team where a simple web application (Python/Node/Java — language doesn’t matter) is currently running on a single virtual machine.
+
+The application:
+
+Listens on port 8080
+
+Crashes occasionally
+
+Needs to be highly available
+
+Should automatically restart if it fails
+
+The team wants to move this application to Kubernetes with minimum complexity, but they also want:
+
+The app to restart automatically if it crashes
+
+At least 2 instances running at all times
+
+Traffic to be load-balanced between instances.

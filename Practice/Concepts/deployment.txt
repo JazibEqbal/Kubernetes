@@ -1,0 +1,88 @@
+🧩 Deployment (what it is)
+Deployment: Controller that manages ReplicaSets and Pods
+Ensures desired state (replicas, updates, self-healing)
+
+🧱 Core Objects
+ReplicaSet
+    Created and managed by Deployment
+    Ensures the specified number of Pods are running
+
+Pod Template (spec.template)
+    Blueprint used to create Pods
+    Same structure as a Pod spec
+
+🔢 Scaling & Availability
+replicas
+    Number of Pods to run
+    Can be manually or auto-scaled
+
+HPA (Horizontal Pod Autoscaler)
+    Scales Pods based on CPU / memory / custom metrics
+    Works with Deployment
+
+🎯 Labels & Selectors
+labels
+    Tags applied to Pods
+
+selector
+    Defines which Pods the Deployment manages
+    Must match Pod template labels
+
+matchLabels / matchExpressions
+    Ways to match Pods via selectors
+
+🔄 Rollouts & Updates
+
+RollingUpdate
+    Default update strategy
+    Gradually replaces old Pods with new ones
+Recreate
+    Terminates all Pods before creating new ones
+    Causes downtime
+maxSurge
+    Extra Pods allowed during update
+maxUnavailable
+    Pods allowed to be unavailable during update
+
+⏪ Rollback & History
+
+revisionHistoryLimit
+    Number of old ReplicaSets kept
+
+Rollback
+    Revert to a previous revision
+
+Deployment revision
+    Versioned history of changes
+
+🧪 Health & Lifecycle
+
+livenessProbe
+    Restarts container if unhealthy
+
+readinessProbe
+    Controls traffic routing to Pods
+
+startupProbe
+    Handles slow-starting containers
+
+🛠 Pod Behavior
+restartPolicy
+    Always (default for Deployments)
+
+resources
+    CPU/memory requests & limits
+
+env / envFrom
+    Environment variables
+
+volumes / volumeMounts
+    Attach storage to Pods
+
+🧠 Status & Management
+
+desiredReplicas
+availableReplicas
+updatedReplicas
+observedGeneration
+(Seen in kubectl describe deployment)

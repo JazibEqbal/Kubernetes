@@ -1,0 +1,52 @@
+#“A Kubernetes Service provides stable networking and load balancing for a dynamic set of Pods using labels and selectors.”
+#🌐Service Types
+
+  # ClusterIP
+  # Default service type
+  # Exposes service inside the cluster only
+  # Used for internal microservice communication
+
+  # NodePort
+  # Exposes service on each node’s IP + static port
+  # Accessible from outside cluster
+  # Port range: 30000–32767
+
+  # LoadBalancer
+  # Provisions a cloud load balancer
+  # Exposes service externally
+  # Common in AWS / GCP / Azure
+
+  # ExternalName
+  # Maps service to an external DNS name
+  # No selector, no Pods
+
+#🎯Selector & Labels
+# selector: Matches Pods using labels i.e, Selector must match Pod labels.
+# Service sends traffic only to matching Pods
+# No selector → Service doesn’t route traffic
+
+# 🔌 Ports
+# port
+# Port exposed by the Service
+
+# targetPort
+# Port on the Pod/container
+
+# nodePort
+# Port exposed on the Node (NodePort service)
+
+# 🌍 Networking Concepts
+# Cluster IP
+# Virtual IP assigned to the Service
+# Stable for service lifetime
+
+# Endpoints / EndpointSlice
+# Actual Pod IPs behind the Service
+# Updated automatically as Pods change
+
+# kube-proxy
+# Implements Service routing
+# Uses iptables / IPVS
+
+“Service labels are optional because Services don’t select themselves.
+Services use selectors to match Pod labels, not Service labels.”

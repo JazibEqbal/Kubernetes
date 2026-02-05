@@ -1,0 +1,34 @@
+Problem Statement 2 — Config Management (Mid Level)
+Scenario
+
+You are deploying a backend microservice on Kubernetes.
+
+Requirements:
+
+The application needs environment-specific configuration
+
+Configuration values must not be hardcoded in the image
+
+Same container image should work for dev, qa, and prod
+
+Config values may change without rebuilding the image
+
+Configuration needed:
+
+APP_ENV → environment name (dev / qa / prod)
+
+LOG_LEVEL → INFO / DEBUG / ERROR
+
+DB_HOST → database hostname
+
+Your Task
+
+Write only Kubernetes YAML to:
+
+Create a ConfigMap with the above values
+
+Inject these values into a Deployment as environment variables
+
+Run 2 replicas of the application
+
+Expose the app internally on port 8080
