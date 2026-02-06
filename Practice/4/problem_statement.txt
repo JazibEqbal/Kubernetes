@@ -1,0 +1,146 @@
+Problem Statement 4 — Rolling Update Failure & Zero Downtime
+Scenario
+
+You manage a production web application running on Kubernetes.
+
+Current state:
+
+Application runs with 3 replicas
+
+Exposed internally via a Service
+
+Users must experience zero downtime during deployments
+
+New requirements:
+
+A new image version is released
+
+The app takes 20–30 seconds to start
+
+If the app fails to start, traffic must NOT be sent to it
+
+If the rollout fails, you must be able to rollback safely
+
+Your Task
+
+Write Kubernetes YAML to:
+
+Create / update a Deployment that:
+
+Uses a RollingUpdate strategy
+
+Allows zero downtime
+
+Handles slow startup properly
+
+Configure health probes so:
+
+Traffic is sent only after the app is ready
+
+Crashing containers are restarted
+
+Ensure the rollout can be rolled back
+
+
+---------------------------------------------------------
+# 🧠 SIMPLE EXPLANATION (TERM BY TERM)
+---
+
+## 🔹 replicas: 3
+
+```yaml
+replicas: 3
+```
+* Runs **3 Pods**
+* Ensures **high availability**
+* If one Pod dies → others still serve traffic
+
+---
+## 🔹 RollingUpdate Strategy
+
+```yaml
+strategy:
+  type: RollingUpdate
+```
+
+* Updates Pods **gradually**
+* No downtime during deployment
+---
+
+## 🔹 maxSurge
+```yaml
+maxSurge: 1
+```
+* Allows **1 extra Pod** during update
+* Old Pods stay running while new one starts
+* Helps achieve **zero downtime**
+---
+
+## 🔹 maxUnavailable
+```yaml
+maxUnavailable: 0
+```
+* Ensures **no Pod is taken down** before new one is ready
+* **Critical for production**
+---
+
+## 🔹 selector & labels
+* Deployment manages Pods **with matching labels**
+* Service sends traffic **to Pods with same labels**
+---
+
+## 🔹 startupProbe (Slow startup handling) Are you still waking up?
+
+```yaml
+startupProbe:
+```
+* Used when app **takes time to start**
+* Kubernetes **waits patiently**
+* Prevents early restarts
+
+🧠 Why needed here:
+* App takes **20–30 seconds to start**
+---
+
+## 🔹 readinessProbe (Traffic control) Are you ready to work?
+```yaml
+readinessProbe:
+```
+* Determines **when Pod is ready to receive traffic**
+* Service **will NOT send traffic** until probe passes
+
+🧠 This is what gives **zero downtime**
+
+---
+
+## 🔹 livenessProbe (Self-healing) Are you alive?
+```yaml
+livenessProbe:
+```
+* Detects if app is **stuck or dead**
+* If this probe fails, Kubernetes **restarts the container**
+
+---
+'''
+httpGet tells Kubernetes: “Check my application by making an HTTP request to this endpoint.”
+
+Startup Probe (if defined) runs FIRST and temporarily disables liveness and readiness probes until startup succeeds.
+If startupProbe exists and succeeds:
+    readinessProbe and livenessProbe run in parallel, independently.
+else:
+    No special ordering between them — both start checking based on their own delays.
+'''
+
+# ⏪ ROLLBACK (INTERVIEW BONUS)
+
+If rollout fails:
+
+```bash
+kubectl rollout undo deployment web-app-deployment
+```
+
+Check rollout status:
+
+```bash
+kubectl rollout status deployment web-app-deployment
+```
