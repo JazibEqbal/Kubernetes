@@ -1,0 +1,36 @@
+Problem Statement 3 — Secrets + Secure Configuration
+Scenario
+
+You are deploying a backend application on Kubernetes that connects to a database.
+
+New requirements:
+
+Database username and password are sensitive
+
+They must not be stored in plain text
+
+The same application image must work across environments
+
+Credentials should be injected securely at runtime
+
+Application needs:
+
+DB_USER
+
+DB_PASSWORD
+
+DB_HOST (non-sensitive)
+
+Your Task
+
+Write only Kubernetes YAML to:
+
+Create a Secret to store DB_USER and DB_PASSWORD
+
+Create a ConfigMap for DB_HOST
+
+Inject both Secret and ConfigMap into a Deployment
+
+Run 2 replicas
+
+Expose the application internally on port 8080
