@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prod-service
+spec:
+  selector:
+    app: prod-web-app
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+
+# kubectl apply -f service.yaml
+# kubectl get svc
+# kubectl describe svc prod-service
+# Confirm traffic routing (readiness working): kubectl get endpoints prod-service

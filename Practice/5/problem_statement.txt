@@ -1,0 +1,105 @@
+Production Web Application
+Scenario
+
+You are deploying a production-grade backend application on Kubernetes.
+
+The application:
+
+Is a REST API
+
+Takes 30–40 seconds to start
+
+Crashes if DB credentials are missing
+
+Must not receive traffic until it is fully ready
+
+Must restart automatically if it becomes unhealthy
+
+Requirements
+
+You must write Kubernetes YAML manifests only to achieve the following.
+
+1️⃣ Configuration Management
+ConfigMap
+
+Create a ConfigMap that stores:
+
+APP_ENV=production
+
+LOG_LEVEL=INFO
+
+APP_PORT=8080
+
+This configuration must be consumed by the container as environment variables.
+
+Secret
+
+Create a Secret that stores:
+
+DB_USER
+
+DB_PASSWORD
+
+Requirements:
+
+Use type: Opaque
+
+Use base64-encoded values
+
+Inject them into the container as environment variables
+
+2️⃣ Deployment
+
+Create a Deployment with:
+
+3 replicas
+
+Proper labels and selectors
+
+Rolling update strategy:
+
+maxUnavailable: 0
+
+maxSurge: 1
+
+Container:
+
+Exposes port 8080
+
+Reads values from ConfigMap and Secret
+
+Fails to start if DB credentials are missing
+
+3️⃣ Health Probes (Very Important)
+
+Configure all three probes correctly:
+
+Startup Probe
+
+Allows the application enough time to boot
+
+Prevents premature restarts during startup
+
+Readiness Probe
+
+Ensures traffic is sent only when app is ready
+
+When it fails, pod must be removed from Service endpoints
+
+Liveness Probe
+
+Detects stuck or crashed app
+
+Restarts the container automatically
+
+4️⃣ Service
+
+Create a Service that:
+
+Is of type ClusterIP
+
+Routes traffic to the Deployment pods
+
+Uses labels/selectors correctly
+
+Exposes port 80 → forwards to container port 8080

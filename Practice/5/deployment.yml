@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-deployment
+  labels:
+    app: prod-web-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: prod-web-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: prod-web-app
+    spec:
+      containers:
+        - name: prod-container
+          image: prod-image
+          ports:
+            - containerPort: 8080
+          
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-config-map
+                  key: APP_ENV
+
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-config-map
+                  key: LOG_LEVEL
+
+            - name: APP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-config-map
+                  key: APP_PORT
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: prod-secret
+                  key: DB_USER
+            
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: prod-secret
+                  key: DB_PASSWORD
+
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 80
+            failureThreshold: 30
+            periodSeconds: 1
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+# kubectl apply -f deployment.yaml
+# kubectl rollout status deployment prod-deployment
+# kubectl get pods
+# kubectl describe pod <pod-name>
+
+# Verify environment variables inside the container: kubectl exec -it <pod-name> -- env | grep APP_
