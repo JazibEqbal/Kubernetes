@@ -1,0 +1,169 @@
+## 🧩 Problem Statement 7: High-Availability API with Cost Optimization
+
+You are running a **customer-facing API** in production on Kubernetes.
+Observations from production:
+    * Traffic is steady but not very high
+    * Nodes are **expensive**, so over-provisioning must be avoided
+    * A **single node failure must not cause downtime**
+    * Pods should be **evenly spread**, but scheduling must not block if the cluster is under pressure
+
+---
+
+📋 Requirements
+
+1️⃣ Deployment
+
+Create a **Deployment** with:
+
+* **4 replicas**
+* Rolling update strategy:
+
+  * `maxUnavailable: 1`
+  * `maxSurge: 1`
+
+Container:
+
+* Image: `customer-api:2.0`
+* Exposes port `8080`
+
+---
+
+2️⃣ Resource Optimization (Very Important)
+
+Define **tight but safe** resources:
+
+**Requests**
+
+```yaml
+cpu: 200m
+memory: 256Mi
+```
+
+**Limits**
+
+```yaml
+cpu: 400m
+memory: 512Mi
+```
+
+Goals:
+
+* Scheduler places pods efficiently
+* Prevent noisy-neighbor issues
+* Avoid unnecessary node scaling
+
+---
+
+3️⃣ Health Probes
+
+Configure:
+
+#### Readiness Probe
+
+* HTTP GET `/ready`
+* Port `8080`
+* Ensures no traffic until ready
+
+#### Liveness Probe
+
+* HTTP GET `/health`
+* Port `8080`
+* Restarts stuck containers
+
+(No startup probe — assume fast startup)
+
+---
+
+4️⃣ Scheduling Strategy (Core of this problem)
+
+A) Node Affinity (Hard requirement)
+
+Pods must run **only on nodes labeled**:
+
+```yaml
+node-type=api
+```
+
+---
+
+B) Pod Distribution (Soft requirement)
+
+Requirements:
+
+* Prefer spreading pods across nodes
+* Do **NOT** block scheduling if perfect spreading is impossible
+
+👉 Use **topologySpreadConstraints**, not podAntiAffinity.
+
+Constraints:
+
+* Spread across **nodes**
+* `maxSkew: 1`
+* Scheduling must continue even if constraint cannot be met
+---
+
+### 1️⃣ What happens if only **2 nodes** have `node-type=api`?
+
+* Pods are scheduled **only on those 2 nodes** (due to nodeAffinity)
+* 4 replicas will be distributed as evenly as possible:
+
+  * 2 pods per node
+* Because `whenUnsatisfiable: ScheduleAnyway` is used:
+
+  * Scheduling **does not block**
+* No pods remain Pending
+
+---
+
+### 2️⃣ What happens if one node suddenly goes down?
+
+* Pods running on that node are **terminated**
+* Deployment controller creates **replacement pods**
+* New pods are scheduled on the remaining node(s) that match:
+
+  * `node-type=api`
+* Service continues routing traffic to healthy pods
+* Temporary reduction in capacity, **not total downtime**
+
+---
+
+### 3️⃣ Why is **topologySpreadConstraints** better here than podAntiAffinity?
+
+* `podAntiAffinity` is a **hard separation rule**
+
+  * Can cause pods to remain Pending
+* `topologySpreadConstraints`:
+
+  * Tries to **balance pods evenly**
+  * Allows scheduling to continue under pressure
+* Better for:
+
+  * Cost optimization
+  * Smaller clusters
+  * Avoiding unnecessary Pending pods
+
+---
+
+### 4️⃣ How do **requests** influence cost optimization?
+
+* Requests tell the scheduler the **minimum resources needed**
+* Scheduler uses requests to:
+
+  * Pack pods efficiently on nodes
+  * Avoid over-provisioning nodes
+* Lower, accurate requests:
+
+  * Reduce idle resources
+  * Lower infrastructure cost
+* Requests drive **node autoscaling decisions**
+
+---
+
+### 5️⃣ What happens if memory usage exceeds `512Mi`?
+
+* Container is **OOMKilled (Out Of Memory Killed)** by the kernel
+* Pod enters a **CrashLoop**
+* Deployment restarts the container automatically
+* Liveness probe may fail before or after OOM
+* Protects node from memory exhaustion
+---
