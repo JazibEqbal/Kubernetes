@@ -1,0 +1,130 @@
+## 🧩 Problem Statement 6: Production API Under Load
+
+### Scenario
+
+You are running a **production REST API** on Kubernetes.
+
+Recently:
+
+* Some pods get **OOMKilled**
+* Some nodes are overloaded
+* During deployments, multiple pods land on the **same node**, causing instability
+
+Your goal is to **stabilize the application using Kubernetes primitives only**.
+
+---
+
+## 📋 Requirements
+
+### 1️⃣ Deployment
+
+Create a Deployment with:
+
+* **3 replicas**
+* Rolling update strategy:
+
+  * `maxUnavailable: 1`
+  * `maxSurge: 1`
+
+Container:
+
+* Image: `prod-api:1.0`
+* Exposes port `8080`
+
+---
+
+### 2️⃣ Resource Management (Very Important)
+
+Each container must define:
+
+**Requests**
+
+```yaml
+cpu: 250m
+memory: 256Mi
+```
+
+**Limits**
+
+```yaml
+cpu: 500m
+memory: 512Mi
+```
+
+👉 The application **must be protected from OOM and CPU starvation**.
+
+---
+
+### 3️⃣ Health Probes (Simplified but correct)
+
+* **Readiness Probe**
+
+  * HTTP GET `/ready`
+  * Port `8080`
+  * Prevents traffic until ready
+
+* **Liveness Probe**
+
+  * HTTP GET `/health`
+  * Port `8080`
+  * Restarts container if unhealthy
+
+(No startup probe this time – assume fast startup)
+
+---
+
+### 4️⃣ Pod Scheduling Constraints
+
+#### A) Pod Anti-Affinity (Critical)
+
+Ensure:
+
+* **No two pods of this Deployment run on the same node**
+
+👉 Use:
+
+* `podAntiAffinity`
+* `requiredDuringSchedulingIgnoredDuringExecution`
+
+---
+
+#### B) Node Selection
+
+Only schedule pods on nodes labeled:
+
+```bash
+node-type=backend
+```
+
+---
+
+### 5️⃣ Failure Scenario to Think About
+
+Answer these **after writing YAML**:
+
+1. What happens if:
+
+   * Memory exceeds `512Mi`?
+2. What happens if:
+
+   * CPU usage spikes above `500m`?
+3. What happens if:
+
+   * A node with one pod goes down?
+4. What happens if:
+
+   * A new pod cannot find a node matching `node-type=backend`?
+
+---
+
+## 🎯 What This Problem Teaches You
+
+By solving this, you’ll understand:
+
+* Why **requests vs limits** exist
+* How Kubernetes **schedules pods**
+* Why anti-affinity is critical in production
+* How Kubernetes reacts to **resource exhaustion**
+* How deployments behave under **node failures**
+
+---

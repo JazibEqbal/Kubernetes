@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prod-deployment
+  labels:
+    app: app-prod
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-prod
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: app-prod
+    spec:
+      # Node selection (where pods are allowed to run)
+      nodeSelector:
+        node-type: backend
+
+      affinity: # It tells Kubernetes where a Pod should (or should not) run.
+      # affinity types: nodeAffinity (“Which nodes?”), podAffinity (“Near which pods?”), podAntiAffinity (“Away from which pods?”)
+        podAntiAffinity: # Pod Anti-Affinity controls how pods are spread across nodes. 
+          requiredDuringSchedulingIgnoredDuringExecution: # must be satisfied else pod will be in pending state
+            - labelSelector:
+                matchLabels:
+                  app: app-prod
+              topologyKey: kubernetes.io/hostname # 1 pod per node
+
+      containers:
+        - name: prod-container
+          image: prod-api:1.0
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+
+# kubectl get nodes
+# Add the label to a node: kubectl label node node-1 node-type=backend
+# Verify the labels: kubectl get nodes --show-labels
+# change labels: kubectl label node node-1 node-type=frontend --overwrite
+
+# nodeAffinity:
+#   requiredDuringSchedulingIgnoredDuringExecution:
+#     nodeSelectorTerms:
+#       - matchExpressions:
+#           - key: kubernetes.io/hostname
+#             operator: In
+#             values:
+#               - node-1
+#               - node-2
+
+
