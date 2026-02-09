@@ -86,3 +86,15 @@ availableReplicas
 updatedReplicas
 observedGeneration
 (Seen in kubectl describe deployment)
+
+Why affinity matters in production
+Without affinity:
+    All replicas may land on one node ❌
+    Node crash = full outage ❌
+
+With anti-affinity:
+    Pods spread across nodes ✅
+    Node crash = partial impact ✅
+
+Node affinity filters which nodes a pod can run on, but it cannot enforce distribution across nodes. 
+Topology keys are used only with pod affinity, anti-affinity, or topology spread constraints.

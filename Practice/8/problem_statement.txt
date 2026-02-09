@@ -1,0 +1,21 @@
+Problem Statement: Kubernetes Requests, Limits & QoS (Resource Optimization)
+
+Scenario:
+
+You are deploying a Java-based microservice in Kubernetes.
+The application normally uses 300–400Mi memory
+During traffic spikes, it may briefly go up to 700Mi
+The node has limited memory and you want to:
+Prevent the pod from being OOMKilled
+Avoid over-reserving memory (wasting cluster resources)
+Ensure this pod gets better priority than best-effort pods
+
+Requirements:
+Configure CPU and memory requests & limits appropriately
+Ensure the pod falls under the correct QoS(Quality of Service) class
+
+Explain what happens if:
+Memory usage crosses the request
+Memory usage crosses the limit
+Bonus: Add a Horizontal Pod Autoscaler decision:
+Should HPA scale on CPU, memory, or both? Why?

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-app
+  template:
+    metadata:
+      labels:
+        app: java-app
+    spec:
+      containers:
+      - name: java-app
+        image: openjdk:17-jdk
+        command: ["java", "-jar", "app.jar"]
+
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "400Mi"
+          limits:
+            cpu: "500m"
+            memory: "800Mi"
