@@ -1,0 +1,103 @@
+🧠 Problem Statement: Stateful Application with Persistent Storage
+
+## 📌 Scenario: Production Database (Stateful Workload)
+
+You are deploying a **production PostgreSQL database** on Kubernetes.
+
+This database:
+
+* Must **retain data even if the pod restarts**
+* Each replica must have its **own dedicated storage**
+* Pod identity must remain **stable** (name + storage)
+* Storage should be **dynamically provisioned**
+* Must be production-safe and scalable
+
+---
+
+## 🎯 Requirements
+
+### 1️⃣ StorageClass (Dynamic Provisioning)
+
+Create a `StorageClass` that:
+
+* Uses a standard cloud / CSI provisioner (generic)
+* Uses `ReadWriteOnce`
+* Has volume expansion enabled
+* Uses `Delete` reclaim policy
+
+---
+
+### 2️⃣ StatefulSet
+
+Create a `StatefulSet` that:
+
+* Runs **PostgreSQL**
+* Has **3 replicas**
+* Uses a **Headless Service**
+* Each pod gets its **own PVC**
+* Pod names must be:
+
+  * `postgres-0`
+  * `postgres-1`
+  * `postgres-2`
+
+---
+
+### 3️⃣ PersistentVolumeClaim (via volumeClaimTemplates)
+
+* PVC size: `10Gi`
+* Must be created **automatically per replica**
+* Must use the above StorageClass
+
+---
+
+### 4️⃣ Environment & Config
+
+* DB name: `appdb`
+* DB user: `admin`
+* DB password: from a **Secret**
+* Mount database data at:
+
+  ```
+  /var/lib/postgresql/data
+  ```
+
+---
+
+### 5️⃣ Stability Guarantees
+
+* Pod restarts **must not delete data**
+* Deleting a pod should **not affect other pods**
+* Scaling from 3 → 4 should:
+
+  * Create a **new pod**
+  * Create a **new PVC**
+  * Not touch existing data
+
+---
+
+## 🧪 Real-World Failure to Think About
+
+> One node crashes and `postgres-1` restarts on another node.
+
+Questions you must be able to answer after solving:
+
+* How does Kubernetes reattach the correct volume?
+* Why Deployment would fail here?
+* Why StatefulSet succeeds?
+
+---
+Explain:
+   * Why StatefulSet is required
+   * How PVCs are created
+   * Difference vs Deployment
+
+---
+
+## 🧭 Hint (Mental Model)
+
+* **Deployment** → interchangeable pods
+* **StatefulSet** → identity + storage coupling
+
+---
+

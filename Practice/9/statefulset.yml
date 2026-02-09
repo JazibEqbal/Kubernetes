@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres           # Headless Service name (REQUIRED for StatefulSet). Used for stable network identity (DNS)
+  replicas: 3                     # Number of PostgreSQL replicas (pods)
+  selector:
+    matchLabels:
+      app: stateful-application
+  template:                        # Pod template (blueprint for each pod)
+    metadata:
+      labels:
+        app: stateful-application
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+
+          env:
+            - name: POSTGRES_DB
+              value: appdb         # Database name created on startup
+
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+
+          volumeMounts:
+            - name: postgres-data  # Refers to PVC name created below. Name must match the name of volumeClaimTemplates
+              mountPath: /var/lib/postgresql/data # Path where PostgreSQL stores data
+
+  volumeClaimTemplates:            # TEMPLATE for PVCs (one PVC per pod)
+    - metadata:
+        name: postgres-data        # PVC name (unique per pod: postgres-data-postgres-0, etc.)
+      spec:
+        accessModes:
+          - ReadWriteOnce          # Volume can be mounted by only one node
+        storageClassName: standard-storage # StorageClass used for dynamic provisioning
+        resources:
+          requests:
+            storage: 10Gi          # Each pod gets 10Gi dedicated storage
+
+# Cluster
+#  └── Controller (Deployment / StatefulSet / Job)
+#       └── Pod
+#            └── Container

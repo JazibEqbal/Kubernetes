@@ -1,0 +1,59 @@
+Why Kubernetes has StatefulSet + PVC + StorageClass?
+    Persistent disk (Persistent means which stays for a long time)
+    Stable identity
+    Ordered startup/shutdown
+    Data survival across restarts
+
+| StorageClass | Disk provisioning policy |
+| PVC          | Disk request             |
+| PV           | Actual disk              |
+
+What is a StorageClass?
+    Answers how storage is created
+    A storage template that tells Kubernetes how to create disks when needed.
+    Kubernetes creates disks on demand.
+
+What is PVC?
+    PersistentVolumeClaim.
+    A request for storage by a pod.
+    You don’t care: Where the disk lives, Which node
+    You care: Size, Access mode, Storage type.
+    Pods never talk to disks directly. Pods talk to PVCs.
+
+StatefulSet guarantees:
+    Stable pod name
+    Stable PVC
+    Ordered startup
+    Ordered shutdown
+
+Headless Service:
+    Load balances randomly. so we use clusterIP: None
+    Direct pod access.
+
+| Thing            | Responsibility        |
+| ---------------- | --------------------- |
+| StorageClass     | How disks are created |
+| PVC              | Disk request          |
+| PV               | Actual disk           |
+| StatefulSet      | Identity + storage    |
+| Headless Service | Direct pod access     |
+
+
+Use StatefulSet when your application needs any of these:
+    * Persistent data (database, message queue, cache with disk)
+    * Stable pod identity (`pod-0`, `pod-1` must stay the same)
+    * One PVC per pod
+    * Ordered startup / shutdown
+    * Pod-to-pod communication by fixed name
+
+If your app needs memory of the past → StatefulSet. If it doesn’t → Deployment.**
+
+What Kubernetes does automatically?
+| Action             | Result                |
+| ------------------ | --------------------- |
+| Create StatefulSet | Pods created in order |
+| Each pod starts    | PVC auto-created      |
+| Pod restarts       | Same PVC reattached   |
+| Scale to 4         | New pod + new PVC     |
+| Delete pod         | Data survives         |
+| Delete StatefulSet | PVCs remain           |

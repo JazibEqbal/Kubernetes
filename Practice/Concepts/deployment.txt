@@ -98,3 +98,23 @@ With anti-affinity:
 
 Node affinity filters which nodes a pod can run on, but it cannot enforce distribution across nodes. 
 Topology keys are used only with pod affinity, anti-affinity, or topology spread constraints.
+
+Kubernetes QoS (Quality Of Service) Classes:
+    BestEffort (lowest priority)
+        No requests, No limits. resources: {}
+    Burstable ⚖️ (balanced – most common)
+        Has requests, Limits are higher than requests (or only requests set)
+    Guaranteed 🛡️ (highest priority)
+        requests == limits for CPU & memory
+
+Use Deployment when the app is stateless:
+    * Don’t care which pod serves traffic
+    * Can restart anywhere
+    * Don’t need disk identity
+
+If your app needs memory of the past → StatefulSet. If it doesn’t → Deployment.**
+
+Cluster
+ └── Controller (Deployment / StatefulSet / Job)
+      └── Pod
+           └── Container
