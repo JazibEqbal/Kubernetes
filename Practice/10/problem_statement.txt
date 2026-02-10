@@ -1,0 +1,341 @@
+## 📌 Scenario: Production Order Processing System
+
+You are deploying a **stateful Order Processing service** in Kubernetes.
+
+### Application behavior
+
+* The main application:
+
+  * Processes orders
+  * Writes **transaction logs to disk**
+  * Requires **persistent storage**
+* A sidecar container:
+
+  * Continuously reads the log files
+  * Ships them to an external logging system
+* Each replica:
+
+  * Must have **its own storage**
+  * Must have a **stable network identity**
+* The application must:
+
+  * Restart automatically if unhealthy
+  * Not receive traffic until fully ready
+
+---
+
+## 🎯 Requirements
+
+---
+
+## 1️⃣ StorageClass (Dynamic Provisioning)
+
+Create a **StorageClass** that:
+
+* Uses any CSI / standard provisioner (generic)
+* `ReadWriteOnce`
+* `reclaimPolicy: Delete`
+* `allowVolumeExpansion: true`
+
+---
+
+## 2️⃣ Headless Service (VERY IMPORTANT)
+
+Create a **Headless Service** that:
+
+* Has `clusterIP: None`
+* Exposes port `8080`
+* Provides **stable DNS** for each pod
+* Is used by the StatefulSet
+
+Example DNS you should get:
+
+```
+order-app-0.order-headless.default.svc.cluster.local
+```
+
+---
+
+## 3️⃣ StatefulSet
+
+Create a **StatefulSet** with:
+
+* `replicas: 3`
+* Uses the **Headless Service**
+* Stable pod names:
+
+  * `order-app-0`
+  * `order-app-1`
+  * `order-app-2`
+
+---
+
+## 4️⃣ Pod Design (Critical Thinking Section)
+
+Each **Pod** must contain **two containers**:
+
+---
+
+### 🔹 Container 1: Order API (Main App)
+
+* Image: `order-api:1.0`
+* Exposes port `8080`
+* Writes logs to:
+
+  ```
+  /var/log/orders/orders.log
+  ```
+* Uses **persistent storage**
+* Has:
+
+  * `readinessProbe` on `/ready`
+  * `livenessProbe` on `/health`
+
+---
+
+### 🔹 Container 2: Log Sidecar
+
+* Image: `busybox`
+* Continuously reads the log file using:
+
+  ```
+  tail -f /var/log/orders/orders.log
+  ```
+* Does **not** expose ports
+* Does **not** have probes
+
+---
+
+## 5️⃣ Persistent Storage (PVC)
+
+* Use `volumeClaimTemplates`
+* Each pod must get:
+
+  * Its **own PVC**
+  * Size: `5Gi`
+  * Uses the above StorageClass
+* Storage must be mounted at:
+
+  ```
+  /var/log/orders
+  ```
+
+---
+
+## 6️⃣ Volumes & Mounts (Concept Check)
+
+* Volumes must be:
+
+  * Defined at **Pod level**
+* `volumeMounts` must be:
+
+  * Defined separately for **each container**
+  * Both containers must mount the **same volume**
+
+---
+
+Perfect, this is exactly the **right set of questions** to lock the concept in. Let’s go point-by-point and tie *everything back to the same StatefulSet problem statement* so it all clicks together 🔩🧠
+
+---
+
+## 1. Why **StatefulSet** is required instead of a Deployment
+    Because **state matters**.
+
+    In our problem statement:
+
+    * Each pod has **its own persistent data**
+    * Pod identity must be **stable**
+    * Pod must get **the same PVC again after restart**
+
+    ### Deployment ❌
+
+    * Pods are interchangeable
+    * Names change (`app-7c9f8d9c6b-xk2m`)
+    * No guaranteed identity → PVC reattachment becomes impossible
+
+    ### StatefulSet ✅
+
+    * Pods have **fixed names**:
+
+    ```
+    stateful-set-prod-0
+    stateful-set-prod-1
+    stateful-set-prod-2
+    ```
+    * Identity is **ordinal-based**
+    * Kubernetes knows **which PVC belongs to which pod**
+
+    👉 **If you care about data, order, identity → StatefulSet is mandatory**
+
+---
+
+## 2. Why a **Headless Service** is mandatory
+    StatefulSet **does not work properly without it**.
+
+    ### What the headless service does:
+
+    ```yaml
+    clusterIP: None
+    ```
+
+    This gives:
+
+    ```
+    stateful-set-prod-0.db.default.svc.cluster.local
+    stateful-set-prod-1.db.default.svc.cluster.local
+    ```
+
+    ### Why this matters:
+
+    * Each pod gets its **own DNS**
+    * Clients can talk to **a specific pod**
+    * Required for databases, leaders, replicas, shards
+
+    Without headless service ❌:
+
+    * All pods are load-balanced randomly
+    * No stable network identity
+
+    👉 **Stable network identity = headless service**
+
+---
+
+## 3. Why PVCs are defined using `volumeClaimTemplates`
+    Because **each pod needs its own volume** — automatically.
+
+    ```yaml
+    volumeClaimTemplates:
+    - metadata:
+        name: data
+    ```
+
+    Kubernetes expands this into:
+
+    ```
+    data-stateful-set-prod-0
+    data-stateful-set-prod-1
+    data-stateful-set-prod-2
+    ```
+
+    ### Why this is powerful:
+
+    * No manual PVC creation
+    * PVC lifecycle is **tied to pod identity**
+    * Kubernetes always knows:
+
+    ```
+    pod X → PVC X
+    ```
+
+    If you manually defined PVCs ❌:
+
+    * Hard to scale
+    * Error-prone
+    * No automation
+
+    👉 **StatefulSet + volumeClaimTemplates = deterministic storage**
+
+---
+
+## 4. Why `emptyDir` would be a **bad choice**
+    `emptyDir` lives **only as long as the pod lives**.
+
+    ### What happens:
+
+    * Pod deleted ❌
+    * Data deleted ❌
+    * Restart = data loss ❌❌❌
+
+    In our problem statement:
+
+    * We want data to **survive restarts**
+    * We want **reattachment**, not recreation
+
+    So:
+
+    * `emptyDir` → ❌ for databases
+    * PVC → ✅ for persistent workloads
+
+    👉 **If pod death = data loss → wrong storage**
+
+---
+
+## 5. How Kubernetes reattaches the **correct volume** after a pod restart
+    Let’s say:
+
+    ```
+    stateful-set-prod-1 is deleted
+    ```
+
+    ### What Kubernetes remembers:
+
+    * Pod name: `stateful-set-prod-1`
+    * PVC name: `data-stateful-set-prod-1`
+
+    ### When pod is recreated:
+
+    1. Pod name is reused (StatefulSet guarantee)
+    2. Volume mount refers to `data`
+    3. Kubernetes resolves:
+
+    ```
+    data → data-stateful-set-prod-1
+    ```
+    4. Same PVC → Same PV → Same data
+
+    ⚠️ This is **NOT label-based**
+    ⚠️ This is **NOT random**
+    ⚠️ This is **name + ordinal based**
+
+    👉 **Stable pod name = stable storage attachment**
+
+---
+
+## 6. Why the sidecar **must be in the same pod**
+    Because **pods share volumes, containers don’t**.
+
+    ### In our setup:
+
+    * Main container writes data
+    * Sidecar:
+
+    * backs it up
+    * syncs it
+    * monitors it
+    * ships logs
+
+    Both containers need:
+
+    ```yaml
+    volumeMounts:
+    - name: data
+    ```
+
+    ### Same pod ✅
+
+    * Same filesystem
+    * Same PVC
+    * No network copy
+    * No consistency issues
+
+    ### Different pod ❌
+
+    * No shared volume
+    * Race conditions
+    * Network overhead
+    * Broken guarantees
+
+    👉 **If two containers must see the same data → same pod**
+
+---
+
+## One-line mental model (lock this in)
+
+> **StatefulSet** gives pods an identity
+> **Headless Service** gives them a name
+> **volumeClaimTemplates** give them memory
+> **PVCs** make memory survive death
+> **Sidecars** work because they live together
+
+
+

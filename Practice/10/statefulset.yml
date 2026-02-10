@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: stateful-set-prod
+  labels:
+    app: order-app
+spec:
+  serviceName: headless-svc # serviceName must match a Headless Service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: order-app
+  template:
+    metadata:
+      labels:
+        app: order-app
+    spec:
+      containers:
+        - name: order-container
+          image: order-api:1.0
+          ports:
+            - containerPort: 8080
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /var/log/orders
+
+        - name: busybox
+          image: busybox
+          command: ["tail", "-f", "/var/log/orders/orders.log"]
+
+          volumeMounts:
+            - name: persistent storage
+              mountPath: /var/log/orders
+
+  volumeClaimTemplates:
+    - metadata:
+        name: persistent-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: standard # storage class referenced here
+        resources:
+          requests:
+            storage: 5Gi
