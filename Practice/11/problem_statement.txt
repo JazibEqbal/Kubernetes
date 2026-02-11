@@ -1,0 +1,258 @@
+### Scenario
+
+Your company is deploying a **production-grade Order Processing Platform** on Kubernetes.
+The platform consists of a **stateful backend** that processes orders and stores transactional data locally on disk for durability.
+This system must be **highly available**, **fault tolerant**, **secure**, **observable**, and **cost-efficient**.
+
+---
+## 🧩 Application Characteristics
+
+* Backend is **stateful**
+* Each replica **must keep its own persistent data**
+* Pods must have **stable network identities**
+* Application startup takes **25–40 seconds**
+* Application **must not receive traffic until fully ready**
+* Application **crashes if DB credentials are missing**
+* Logs must be written to a **persistent volume**
+* Metrics endpoint exposed at `/metrics`
+* Health endpoints:
+
+  * `/startup`
+  * `/ready`
+  * `/health`
+
+---
+
+## 🎯 Infrastructure Constraints
+
+* Kubernetes cluster has:
+  * **Multiple nodes**
+  * Nodes are labeled:
+
+    ```
+    node-type=backend
+    ```
+* At least **3 backend nodes** are available
+* Pods must be **evenly spread across nodes**
+* No two replicas should run on the **same node if avoidable**
+
+---
+
+## 📌 Requirements
+
+### 1️⃣ Namespace Isolation
+
+* Create a dedicated namespace:
+
+  ```
+  prod-orders
+  ```
+* All resources must be deployed inside this namespace
+
+---
+
+### 2️⃣ Configuration Management
+
+#### ConfigMap
+
+Create a ConfigMap containing:
+
+* `APP_ENV=production`
+* `LOG_LEVEL=INFO`
+* `APP_PORT=8080`
+
+Inject all values as **environment variables**
+
+#### Secret
+
+Create a Secret with:
+
+* `DB_USER`
+* `DB_PASSWORD`
+
+Requirements:
+
+* Use `type: Opaque`
+* Use base64 encoding
+* Inject as environment variables
+* Application must **fail to start** if secrets are missing
+
+---
+
+### 3️⃣ Storage & Persistence
+
+* Use **StatefulSet**, not Deployment
+* Each replica must have:
+
+  * Its **own PersistentVolumeClaim**
+  * Storage size: `5Gi`
+  * `ReadWriteOnce`
+* Storage must survive:
+
+  * Pod restarts
+  * Pod rescheduling
+* Define and use a **StorageClass**
+* Volume should be mounted at:
+
+  ```
+  /var/lib/orders
+  ```
+
+---
+
+### 4️⃣ Networking
+
+* Create a **Headless Service**
+
+* Used by the StatefulSet for:
+
+  * Stable DNS
+  * Pod identity
+
+* Pods must be reachable as:
+
+  ```
+  order-app-0
+  order-app-1
+  order-app-2
+  ```
+
+* Create an additional **ClusterIP Service** for client traffic:
+
+  * Expose port `80`
+  * Forward to container port `8080`
+
+---
+
+### 5️⃣ Health Probes (Critical)
+
+Configure **all three probes correctly**:
+
+#### Startup Probe
+
+* Allows long startup time
+* Prevents premature restarts
+
+#### Readiness Probe
+
+* Ensures pod receives traffic only when ready
+* Pod must be removed from Service endpoints on failure
+
+#### Liveness Probe
+
+* Detects stuck or crashed application
+* Automatically restarts the container
+
+---
+
+### 6️⃣ Affinity & Scheduling (Very Important)
+
+#### Node Affinity
+
+* Pods must run **only** on nodes with:
+
+  ```
+  node-type=backend
+  ```
+
+#### Pod Anti-Affinity
+
+* Avoid scheduling two replicas on the same node
+* Use hostname-based topology
+
+#### Topology Spread Constraints
+
+* Spread replicas evenly across nodes
+* Ensure high availability during node failures
+
+---
+
+### 7️⃣ Resource Management
+
+* Define **requests and limits** for:
+
+  * CPU
+  * Memory
+* Ensure:
+
+  * Guaranteed scheduling
+  * Protection against noisy neighbors
+  * Cost optimization
+
+---
+
+### 8️⃣ Observability
+
+* Expose metrics endpoint `/metrics`
+* Logs must persist across pod restarts
+* Logs written to the persistent volume
+* Add a lightweight sidecar container to:
+
+  * Continuously stream logs from the shared volume
+
+---
+
+### 9️⃣ Auto Scaling
+
+* Configure **Horizontal Pod Autoscaler (HPA)**:
+
+  * Scale based on CPU utilization
+  * Min replicas: `3`
+  * Max replicas: `6`
+* Ensure autoscaling works correctly with:
+  * Resource requests
+  * StatefulSet constraints
+
+---
+
+┌──────────────┐
+│   Client     │
+└──────┬───────┘
+       │
+       ▼
+┌──────────────────────┐
+│ ClusterIP Service    │  ← prod-client-service
+└──────┬───────────────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│ StatefulSet Pods (order-app-0,1,2)      │
+│                                         │
+│  ┌────────────┐   ┌────────────┐        │
+│  │ order-app  │   │ log-sidecar│        │
+│  │ container  │   │ container  │        │
+│  └─────┬──────┘   └─────┬──────┘        │
+│        │ shared PVC     │               │
+│        ▼                ▼               │
+│     Persistent Volume (per pod)         │
+└─────────────────────────────────────────┘
+       ▲
+       │
+┌──────────────────────┐
+│ Headless Service     │  ← prod-headless-service
+│ (Stable DNS per pod) │
+└──────────────────────┘
+
+Uses:
+    Namespace → Environment isolation
+    ConfigMap → App configuration
+    Secret → Sensitive data
+    StorageClass → How storage is created
+    PVC → Stable storage per pod
+    StatefulSet → Stable identity + storage
+    Headless Service → Pod DNS identity
+    ClusterIP Service → Client traffic
+    Sidecar → Log processing
+    Probes → Health & traffic control
+    Affinity → Placement rules
+    HPA → Auto-scaling
+
+StatefulSet
+│
+└── creates Pods with label: app=production
+                │
+                ▼
+Client Service watches for label: app=production
+                │
+                ▼
+Automatically routes traffic to those Pods

@@ -1,0 +1,35 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: prod-hpa
+  namespace: prod-orders
+spec:
+  scaleTargetRef: # Tells HPA what to scale
+    apiVersion: apps/v1
+    kind: StatefulSet # can scale Deployment, StatefulSet, ReplicaSet
+    name: production-stateful-set
+  minReplicas: 3
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu # memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+# Controls how fast scaling happens:
+  # behavior:
+  #   scaleUp:
+  #     stabilizationWindowSeconds: 60
+  #     policies:
+  #       - type: Percent
+  #         value: 100
+  #         periodSeconds: 60
+
+  #   scaleDown:
+  #     stabilizationWindowSeconds: 300
+  #     policies:
+  #       - type: Percent
+  #         value: 50
+  #         periodSeconds: 60

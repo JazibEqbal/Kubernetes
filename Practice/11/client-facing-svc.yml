@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prod-client-service
+  namespace: prod-orders
+  labels:
+    app: production
+spec:
+  type: ClusterIP
+  selector:
+    app: production
+  ports:
+    - port: 80
+      targetPort: 8080

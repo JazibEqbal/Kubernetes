@@ -118,3 +118,5 @@ Cluster
  └── Controller (Deployment / StatefulSet / Job)
       └── Pod
            └── Container
+           
+restartPolicy is applicable to Pods.

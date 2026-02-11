@@ -20,6 +20,10 @@ What is PVC?
     You care: Size, Access mode, Storage type.
     Pods never talk to disks directly. Pods talk to PVCs.
 
+StatefulSet does NOT use strategy. it uses:
+    updateStrategy:
+        type: RollingUpdate
+
 StatefulSet guarantees:
     Stable pod name
     Stable PVC
@@ -57,3 +61,5 @@ What Kubernetes does automatically?
 | Scale to 4         | New pod + new PVC     |
 | Delete pod         | Data survives         |
 | Delete StatefulSet | PVCs remain           |
+
+maxSkew: 0 means perfect balance required, Pods may become unschedulable

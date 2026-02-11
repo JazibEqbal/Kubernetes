@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: production-stateful-set
+  namespace: prod-orders
+  labels:
+    app: production
+spec:
+  serviceName: prod-headless-service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: production
+
+  template:
+    metadata:
+      labels:
+        app: production
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: node-type
+                    operator: In
+                    values:
+                      - backend
+
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: production
+                topologyKey: kubernetes.io/hostname
+
+      containers:
+        - name: order-app
+          image: order-app:1.0
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-map
+                  key: APP_ENV
+
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-map
+                  key: LOG_LEVEL
+
+            - name: APP_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: prod-map
+                  key: APP_PORT
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: prod-secret
+                  key: DB_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: prod-secret
+                  key: DB_PASSWORD
+
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 400m
+              memory: 512Mi
+
+          startupProbe:
+            httpGet:
+              path: /startup
+              port: 8080
+            failureThreshold: 40
+            periodSeconds: 1
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+
+          volumeMounts:
+            - name: prod-volume
+              mountPath: /var/lib/orders
+
+        - name: log-sidecar
+          image: busybox
+          command: ["sh", "-c", "tail -f /var/lib/orders/app.log"]
+          volumeMounts:
+            - name: prod-volume
+              mountPath: /var/lib/orders
+
+  volumeClaimTemplates:
+    - metadata:
+        name: prod-volume
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: prod-standard-volume
+        resources:
+          requests:
+            storage: 5Gi

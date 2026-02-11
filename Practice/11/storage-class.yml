@@ -1,0 +1,10 @@
+# Storage Class is cluster scoped. Therefore, it must not have a namespace.
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: prod-standard-volume
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+allowVolumeExpansion: true

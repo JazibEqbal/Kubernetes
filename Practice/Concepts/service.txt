@@ -1,4 +1,10 @@
 #“A Kubernetes Service provides stable networking and load balancing for a dynamic set of Pods using labels and selectors.”
+
+A Service is just a stable virtual IP + DNS name that:
+  Watches labels
+  Builds a list of Pod IPs (endpoints)
+  Forwards traffic to those Pods
+
 #🌐Service Types
 
   # ClusterIP
@@ -50,3 +56,8 @@
 
 “Service labels are optional because Services don’t select themselves.
 Services use selectors to match Pod labels, not Service labels.”
+
+Headless Service:
+  No virtual IP
+  No load balancing
+  Creates DNS records per Pod
